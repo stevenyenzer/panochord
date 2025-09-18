@@ -3,7 +3,7 @@
 # --- Config ---
 HOST="yenzer.net"
 USER="steven@yenzer.net"
-PASS="fUvpa5-potzek-vebkuc"
+PASS=""
 REMOTE_DIR="/home/yenzqqrt/public_html/chords/"
 
 # --- Build the app ---
