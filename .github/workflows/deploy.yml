@@ -46,16 +46,16 @@ jobs:
             exit 1
           fi
 
-          # Write SSH key with proper formatting
-          cat > ~/.ssh/id_rsa << 'EOF'
-          ${{ secrets.SSH_PRIVATE_KEY }}
-          EOF
+          # Write SSH key with proper formatting (remove any extra whitespace)
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | sed 's/^[[:space:]]*//' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Verify key format
+          # Verify key format and validate
           echo "SSH key format check:"
           head -1 ~/.ssh/id_rsa
           tail -1 ~/.ssh/id_rsa
+          echo "Key validation:"
+          ssh-keygen -l -f ~/.ssh/id_rsa || echo "Key validation failed"
 
           # Add host to known_hosts to avoid prompts (with custom port)
           ssh-keyscan -p 21098 -H yenzer.net >> ~/.ssh/known_hosts
