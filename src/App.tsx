@@ -178,8 +178,11 @@ async function playChord(notes: string[]) {
 
   } catch (error) {
     console.error('❌ Audio error:', error);
-    console.error('❌ Error type:', error.constructor.name);
-    console.error('❌ Error message:', error.message);
+
+    if (error instanceof Error) {
+      console.error('❌ Error type:', error.constructor.name);
+      console.error('❌ Error message:', error.message);
+    }
 
     // Try to provide helpful error context
     const audioCtx = getAudioContext();
