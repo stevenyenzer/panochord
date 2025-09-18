@@ -33,20 +33,32 @@ jobs:
 
       - name: Deploy via rsync over SSH
         run: |
-          # Install rsync and setup SSH
-          sudo apt-get update && sudo apt-get install -y rsync openssh-client
+          # Install rsync (openssh-client already available)
+          sudo apt-get update && sudo apt-get install -y rsync
 
-          # Create SSH key from secret
+          # Setup SSH directory and key
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Write SSH key (check if secret exists)
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "Error: SSH_PRIVATE_KEY secret not configured"
+            exit 1
+          fi
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Add host to known_hosts to avoid prompts
-          ssh-keyscan -H yenzer.net >> ~/.ssh/known_hosts
+          # Add host to known_hosts to avoid prompts (with custom port)
+          ssh-keyscan -p 21098 -H yenzer.net >> ~/.ssh/known_hosts
+
+          # Test SSH connection first
+          echo "Testing SSH connection..."
+          ssh -p 21098 -o ConnectTimeout=10 -o BatchMode=yes ${{ secrets.SSH_USERNAME }}@yenzer.net "echo 'SSH connection successful'"
 
           # Deploy using rsync with SSH on port 21098
+          echo "Starting deployment..."
           rsync -avz --delete \
-            -e "ssh -p 21098" \
+            -e "ssh -p 21098 -o ConnectTimeout=30 -o BatchMode=yes" \
             --exclude='.git*' \
             --exclude='node_modules' \
             dist/ ${{ secrets.SSH_USERNAME }}@yenzer.net:public_html/chords/
