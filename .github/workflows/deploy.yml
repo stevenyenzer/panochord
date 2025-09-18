@@ -85,59 +85,48 @@ jobs:
             **/.git*/**
             **/node_modules/**
 
-      - name: Deploy Attempt 3 - Absolute Home Path
+      - name: Deploy Attempt 3 - SFTP with Correct Path
         if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         continue-on-error: true
         id: deploy3
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: yenzer.net
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: /home/yenzqqrt/public_html/chords/
-          protocol: ftp
-          port: 21
+          protocol: sftp
+          port: 22
           log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
 
-      - name: Deploy Attempt 4 - LFTP Fallback
+      - name: Deploy Attempt 4 - LFTP SFTP Fallback
         if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure' && steps.deploy3.outcome == 'failure'
         env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           sudo apt-get update && sudo apt-get install -y lftp
 
-          echo "🔍 Attempting LFTP deployment as fallback..."
+          echo "🔍 Attempting SFTP deployment with correct path..."
 
-          # Try each path with lftp
-          for path in "public_html/chords/" "./public_html/chords/" "/home/yenzqqrt/public_html/chords/"; do
-            echo "🚀 Trying path: $path"
-
-            cat > deploy.lftp << EOF
-          set ftp:ssl-allow no
-          set ftp:passive-mode yes
+          cat > deploy.lftp << EOF
+          set sftp:auto-confirm yes
           set cmd:fail-exit yes
-          open ftp://$FTP_USERNAME:$FTP_PASSWORD@$FTP_SERVER
-          cd $path
+          open sftp://$FTP_USERNAME:$FTP_PASSWORD@yenzer.net
+          cd /home/yenzqqrt/public_html/chords/
           pwd
           lcd dist
           mirror --reverse --delete --verbose --parallel=3
           quit
           EOF
 
-            if lftp -f deploy.lftp; then
-              echo "✅ Success with path: $path"
-              break
-            else
-              echo "❌ Failed with path: $path"
-            fi
-          done
+          echo "🚀 Deploying via SFTP to /home/yenzqqrt/public_html/chords/"
+          lftp -f deploy.lftp
 
       - name: Verify deployment
         run: |
