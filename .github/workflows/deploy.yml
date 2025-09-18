@@ -38,10 +38,12 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ./public_html/chords/
+          server-dir: /public_html/chords/
           log-level: verbose
           dry-run: false
           dangerous-clean-slate: false
+          protocol: ftp
+          port: 21
           exclude: |
             **/.git*
             **/.git*/**
