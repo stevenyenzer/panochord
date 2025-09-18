@@ -55,7 +55,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: chords/
+          server-dir: public_html/chords/
           protocol: ftp
           port: 21
           log-level: verbose
