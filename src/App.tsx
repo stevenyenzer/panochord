@@ -97,7 +97,7 @@ function playChord(notes: string[]) {
     const now = audioCtx.currentTime;
 
     // Calculate per-note volume to prevent clipping
-    const noteVolume = Math.min(0.25, 0.8 / notes.length);
+    const noteVolume = Math.min(0.15, 0.5 / notes.length);
     console.log('🔊 VOLUME PER NOTE:', noteVolume);
     console.log('🔊 TOTAL EXPECTED VOLUME:', noteVolume * notes.length);
 
