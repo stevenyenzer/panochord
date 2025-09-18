@@ -265,11 +265,11 @@ export default function App() {
       {/* Chords grouped by roman numerals */}
       <div className="space-y-6 w-full max-w-3xl">
         {degreeRoots.map((root, i) => (
-          <div key={i}>
-            <h2 className="text-lg font-semibold mb-2 text-gray-300">
+          <div key={i} className="text-center">
+            <h2 className="text-lg font-semibold mb-4 text-gray-300">
               {romanNumerals[i]}
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
               {chordTypes.map((suffix) => {
                 const chordName = root + (suffix === "" ? "" : suffix);
                 if (!chordVoicings[chordName]) return null;

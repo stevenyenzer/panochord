@@ -69,7 +69,7 @@ jobs:
             -e "ssh -p 21098 -o ConnectTimeout=30 -o BatchMode=yes" \
             --exclude='.git*' \
             --exclude='node_modules' \
-            dist/ ${{ secrets.SSH_USERNAME }}@yenzer.net:public_html/chords/
+            dist/ ${{ secrets.SSH_USERNAME }}@yenzer.net:chords/
 
       - name: Verify deployment
         run: |
