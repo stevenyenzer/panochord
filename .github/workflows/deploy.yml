@@ -40,7 +40,15 @@ jobs:
           local-dir: ./dist/
           server-dir: ./public_html/chords/
           log-level: verbose
+          dry-run: false
+          dangerous-clean-slate: false
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment completed!"
+          echo "Files should now be at: ${{ secrets.FTP_SERVER }}/public_html/chords/"
+          echo "Accessible at: https://yenzer.net/chords/"
