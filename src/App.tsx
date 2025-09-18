@@ -68,6 +68,7 @@ roots.forEach((root) => {
 
 // Shared audio context to avoid performance issues
 let audioContext: AudioContext | null = null;
+let isAudioInitialized = false;
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -76,22 +77,49 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
+async function initializeAudio(): Promise<AudioContext> {
+  const ctx = getAudioContext();
+
+  console.log('🔧 Initializing audio, current state:', ctx.state);
+
+  if (ctx.state === 'suspended') {
+    console.log('🔧 Resuming suspended audio context...');
+    await ctx.resume();
+    console.log('🔧 Audio context resumed, new state:', ctx.state);
+  }
+
+  // Test audio capability with a silent tone
+  if (!isAudioInitialized) {
+    console.log('🔧 Testing audio capability...');
+    const testOsc = ctx.createOscillator();
+    const testGain = ctx.createGain();
+    testGain.gain.setValueAtTime(0, ctx.currentTime); // Silent test
+    testOsc.connect(testGain).connect(ctx.destination);
+    testOsc.start();
+    testOsc.stop(ctx.currentTime + 0.01);
+    isAudioInitialized = true;
+    console.log('🔧 Audio test completed');
+  }
+
+  return ctx;
+}
+
 // play chord
-function playChord(notes: string[]) {
+async function playChord(notes: string[]) {
   console.log('🎵 PLAYING CHORD:', notes);
   console.log('🎵 Chord length:', notes.length);
 
   try {
-    const audioCtx = getAudioContext();
-    console.log('🔊 AudioContext state:', audioCtx.state);
+    const audioCtx = await initializeAudio();
+    console.log('🔊 AudioContext state after init:', audioCtx.state);
     console.log('🔊 AudioContext currentTime:', audioCtx.currentTime);
+    console.log('🔊 AudioContext sampleRate:', audioCtx.sampleRate);
+    console.log('🔊 AudioContext destination maxChannelCount:', audioCtx.destination.maxChannelCount);
 
-    // Resume context if suspended (required after user interaction in some browsers)
-    if (audioCtx.state === 'suspended') {
-      console.log('⏯️ RESUMING suspended AudioContext...');
-      audioCtx.resume().then(() => {
-        console.log('✅ AudioContext resumed, new state:', audioCtx.state);
-      });
+    // Additional state check
+    if (audioCtx.state !== 'running') {
+      console.error('❌ AudioContext is not running! State:', audioCtx.state);
+      return;
     }
 
     const now = audioCtx.currentTime;
@@ -149,7 +177,14 @@ function playChord(notes: string[]) {
   console.log('✅ All oscillators created and started!');
 
   } catch (error) {
-    console.error('Audio error:', error);
+    console.error('❌ Audio error:', error);
+    console.error('❌ Error type:', error.constructor.name);
+    console.error('❌ Error message:', error.message);
+
+    // Try to provide helpful error context
+    const audioCtx = getAudioContext();
+    console.error('❌ Context state during error:', audioCtx.state);
+    console.error('❌ Context sample rate:', audioCtx.sampleRate);
   }
 }
 
@@ -157,11 +192,23 @@ export default function App() {
   const [activeChord, setActiveChord] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string>("C");
   const [mode, setMode] = useState<"major" | "minor">("major");
+  const [audioReady, setAudioReady] = useState<boolean>(false);
 
-  const handlePlay = (chord: string) => {
+  const handlePlay = async (chord: string) => {
     setActiveChord(chord);
-    playChord(chordVoicings[chord]);
+    await playChord(chordVoicings[chord]);
     setTimeout(() => setActiveChord(null), 250);
+  };
+
+  const initializeAudioSystem = async () => {
+    try {
+      console.log('🎧 User requested audio initialization...');
+      await initializeAudio();
+      setAudioReady(true);
+      console.log('🎧 Audio system ready!');
+    } catch (error) {
+      console.error('❌ Failed to initialize audio:', error);
+    }
   };
 
   // figure out scale degrees for selected key & mode
@@ -173,7 +220,20 @@ export default function App() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      <h1 className="text-3xl font-bold mb-6">Chord Player</h1>
+      <h1 className="text-3xl font-bold mb-6">Panochord</h1>
+
+      {/* Audio initialization prompt */}
+      {!audioReady && (
+        <div className="mb-6 p-4 bg-blue-800 rounded-lg text-center">
+          <p className="mb-3">Click to enable audio:</p>
+          <button
+            onClick={initializeAudioSystem}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition"
+          >
+            🎵 Enable Audio
+          </button>
+        </div>
+      )}
 
       {/* Key and mode selectors */}
       <div className="flex space-x-4 mb-6">
