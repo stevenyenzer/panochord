@@ -13,6 +13,12 @@ This is a React-based songwriting chord player application built with TypeScript
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview production build locally
 
+## Deployment
+
+- `./deploy.sh` - Deploy to Namecheap hosting via SSH on port 21098
+- Automatic deployment via GitHub Actions on push to main branch
+- SSH key authentication required for deployment
+
 ## Architecture
 
 ### Core Application Structure

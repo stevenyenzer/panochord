@@ -1,4 +1,4 @@
-name: Deploy to Namecheap via FTP
+name: Deploy to Namecheap
 
 on:
   push:
@@ -28,44 +28,30 @@ jobs:
         run: |
           echo "Build completed. Checking dist folder..."
           ls -la dist/
-          echo "Contents of dist/assets:"
-          ls -la dist/assets/ || echo "No assets folder"
+          echo "Total files to deploy:"
+          find dist -type f | wc -l
 
-      - name: Deploy to Namecheap FTP with multiple path attempts
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: public_html/chords/
-          protocol: ftp
-          port: 21
-          log-level: verbose
-          dry-run: true
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+      - name: Deploy via rsync over SSH
+        run: |
+          # Install rsync and setup SSH
+          sudo apt-get update && sudo apt-get install -y rsync openssh-client
 
-      - name: Deploy to FTP - Fixed Path
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: public_html/chords/
-          protocol: ftp
-          port: 21
-          log-level: verbose
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+          # Create SSH key from secret
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Add host to known_hosts to avoid prompts
+          ssh-keyscan -H yenzer.net >> ~/.ssh/known_hosts
+
+          # Deploy using rsync with SSH on port 21098
+          rsync -avz --delete \
+            -e "ssh -p 21098" \
+            --exclude='.git*' \
+            --exclude='node_modules' \
+            dist/ ${{ secrets.SSH_USERNAME }}@yenzer.net:public_html/chords/
 
       - name: Verify deployment
         run: |
           echo "Deployment completed!"
-          echo "Files should now be at: ${{ secrets.FTP_SERVER }}/public_html/chords/"
           echo "Accessible at: https://yenzer.net/chords/"
