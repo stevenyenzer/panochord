@@ -24,6 +24,13 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Verify build output
+        run: |
+          echo "Build completed. Checking dist folder..."
+          ls -la dist/
+          echo "Contents of dist/assets:"
+          ls -la dist/assets/ || echo "No assets folder"
+
       - name: Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -32,6 +39,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: ./public_html/chords/
+          log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**
