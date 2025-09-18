@@ -78,17 +78,18 @@ function getAudioContext(): AudioContext {
 
 // play chord
 function playChord(notes: string[]) {
-  const audioCtx = getAudioContext();
+  try {
+    const audioCtx = getAudioContext();
 
-  // Resume context if suspended (required after user interaction in some browsers)
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
+    // Resume context if suspended (required after user interaction in some browsers)
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
 
-  const now = audioCtx.currentTime;
+    const now = audioCtx.currentTime;
 
-  // Calculate per-note volume to prevent clipping
-  const noteVolume = Math.min(0.15, 0.5 / notes.length);
+    // Calculate per-note volume to prevent clipping
+    const noteVolume = Math.min(0.25, 0.8 / notes.length);
 
   notes.forEach((note) => {
     const freq = noteFrequencies[note];
@@ -108,6 +109,10 @@ function playChord(notes: string[]) {
     osc.start(now);
     osc.stop(now + 2);
   });
+
+  } catch (error) {
+    console.error('Audio error:', error);
+  }
 }
 
 export default function App() {
