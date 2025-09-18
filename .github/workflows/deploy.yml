@@ -31,23 +31,38 @@ jobs:
           echo "Contents of dist/assets:"
           ls -la dist/assets/ || echo "No assets folder"
 
-      - name: Deploy to FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: /public_html/chords/
-          log-level: verbose
-          dry-run: false
-          dangerous-clean-slate: false
-          protocol: ftp
-          port: 21
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+      - name: Deploy to FTP using lftp
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          echo "🌐 Deploying to $FTP_SERVER..."
+
+          # Create lftp script
+          cat > deploy.lftp << EOF
+          set ftp:ssl-allow no
+          set ftp:passive-mode yes
+          set cmd:fail-exit yes
+          open ftp://$FTP_USERNAME:$FTP_PASSWORD@$FTP_SERVER
+          cd /public_html/chords/
+          lcd dist
+          mirror --reverse --delete --verbose --parallel=3
+          quit
+          EOF
+
+          echo "📂 Contents of dist directory:"
+          ls -la dist/
+
+          echo "🚀 Starting FTP upload..."
+          lftp -f deploy.lftp
+
+          echo "✅ Deployment completed!"
 
       - name: Verify deployment
         run: |
