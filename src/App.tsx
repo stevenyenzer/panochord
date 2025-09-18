@@ -263,13 +263,13 @@ export default function App() {
       </div>
 
       {/* Chords grouped by roman numerals */}
-      <div className="space-y-6 w-full max-w-3xl flex flex-col items-center">
+      <div className="space-y-6 max-w-3xl flex flex-col items-center">
         {degreeRoots.map((root, i) => (
-          <div key={i} className="text-center w-full">
-            <h2 className="text-lg font-semibold mb-4 text-gray-300 text-center">
+          <div key={i} className="flex flex-col items-center">
+            <h2 className="text-lg font-semibold mb-4 text-gray-300">
               {romanNumerals[i]}
             </h2>
-            <div className="flex flex-wrap gap-2 justify-center items-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {chordTypes.map((suffix) => {
                 const chordName = root + (suffix === "" ? "" : suffix);
                 if (!chordVoicings[chordName]) return null;
