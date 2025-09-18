@@ -101,6 +101,11 @@ function playChord(notes: string[]) {
     console.log('🔊 VOLUME PER NOTE:', noteVolume);
     console.log('🔊 TOTAL EXPECTED VOLUME:', noteVolume * notes.length);
 
+  // Create a master gain node to control overall volume
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0.6, now); // Overall volume control
+  masterGain.connect(audioCtx.destination);
+
   notes.forEach((note, index) => {
     const freq = noteFrequencies[note];
     console.log(`🎼 Note ${index + 1}: ${note} = ${freq}Hz`);
@@ -112,20 +117,33 @@ function playChord(notes: string[]) {
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
 
-    osc.type = "sine";
+    // Use triangle wave for softer, less harsh sound
+    osc.type = "triangle";
+
+    // Add slight detuning to reduce phase interference
+    const detuning = (index - notes.length / 2) * 2; // Spread notes slightly
     osc.frequency.setValueAtTime(freq, now);
+    osc.detune.setValueAtTime(detuning, now);
 
+    // Low-pass filter to reduce harsh overtones
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1000, now);
+    filter.Q.setValueAtTime(0.5, now);
+
+    // Softer envelope with slower attack/release
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(noteVolume, now + 0.05);
-    gain.gain.setValueAtTime(noteVolume, now + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+    gain.gain.linearRampToValueAtTime(noteVolume, now + 0.1); // Slower attack
+    gain.gain.setValueAtTime(noteVolume, now + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5); // Longer release
 
-    osc.connect(gain).connect(audioCtx.destination);
+    // Connect: oscillator -> filter -> gain -> master gain -> destination
+    osc.connect(filter).connect(gain).connect(masterGain);
 
-    console.log(`🎶 Starting oscillator for ${note} at ${freq}Hz with volume ${noteVolume}`);
+    console.log(`🎶 Starting oscillator for ${note} at ${freq}Hz with volume ${noteVolume}, detune ${detuning}`);
     osc.start(now);
-    osc.stop(now + 2);
+    osc.stop(now + 2.5);
   });
 
   console.log('✅ All oscillators created and started!');
