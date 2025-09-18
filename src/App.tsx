@@ -78,22 +78,38 @@ function getAudioContext(): AudioContext {
 
 // play chord
 function playChord(notes: string[]) {
+  console.log('🎵 PLAYING CHORD:', notes);
+  console.log('🎵 Chord length:', notes.length);
+
   try {
     const audioCtx = getAudioContext();
+    console.log('🔊 AudioContext state:', audioCtx.state);
+    console.log('🔊 AudioContext currentTime:', audioCtx.currentTime);
 
     // Resume context if suspended (required after user interaction in some browsers)
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      console.log('⏯️ RESUMING suspended AudioContext...');
+      audioCtx.resume().then(() => {
+        console.log('✅ AudioContext resumed, new state:', audioCtx.state);
+      });
     }
 
     const now = audioCtx.currentTime;
 
     // Calculate per-note volume to prevent clipping
     const noteVolume = Math.min(0.25, 0.8 / notes.length);
+    console.log('🔊 VOLUME PER NOTE:', noteVolume);
+    console.log('🔊 TOTAL EXPECTED VOLUME:', noteVolume * notes.length);
 
-  notes.forEach((note) => {
+  notes.forEach((note, index) => {
     const freq = noteFrequencies[note];
-    if (!freq) return;
+    console.log(`🎼 Note ${index + 1}: ${note} = ${freq}Hz`);
+
+    if (!freq) {
+      console.warn(`⚠️ No frequency found for note: ${note}`);
+      return;
+    }
+
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -106,9 +122,13 @@ function playChord(notes: string[]) {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
     osc.connect(gain).connect(audioCtx.destination);
+
+    console.log(`🎶 Starting oscillator for ${note} at ${freq}Hz with volume ${noteVolume}`);
     osc.start(now);
     osc.stop(now + 2);
   });
+
+  console.log('✅ All oscillators created and started!');
 
   } catch (error) {
     console.error('Audio error:', error);
