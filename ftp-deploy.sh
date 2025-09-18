@@ -46,7 +46,7 @@ lftp -c "
 set ftp:ssl-allow no
 set ftp:passive-mode yes
 open ftp://steven%40yenzer.net:$FTP_PASSWORD@ftp.yenzer.net
-cd /public_html/chords/
+cd public_html/chords/
 lcd dist
 mirror --reverse --delete --verbose .
 quit

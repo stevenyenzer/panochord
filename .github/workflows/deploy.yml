@@ -50,7 +50,7 @@ jobs:
           set ftp:passive-mode yes
           set cmd:fail-exit yes
           open ftp://$FTP_USERNAME:$FTP_PASSWORD@$FTP_SERVER
-          cd /public_html/chords/
+          cd public_html/chords/
           lcd dist
           mirror --reverse --delete --verbose --parallel=3
           quit
