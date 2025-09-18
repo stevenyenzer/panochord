@@ -43,9 +43,10 @@ echo ""
 
 # Upload files using lftp
 lftp -c "
-set sftp:auto-confirm yes
-open sftp://steven%40yenzer.net:$FTP_PASSWORD@yenzer.net
-cd /home/yenzqqrt/public_html/chords/
+set ftp:ssl-allow no
+set ftp:passive-mode yes
+open ftp://steven%40yenzer.net:$FTP_PASSWORD@ftp.yenzer.net
+cd chords/
 lcd dist
 mirror --reverse --delete --verbose .
 quit
