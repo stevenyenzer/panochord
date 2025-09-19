@@ -111,10 +111,10 @@ async function playChord(notes: string[]) {
 
   try {
     const audioCtx = await initializeAudio();
-    console.log('🔊 AudioContext state after init:', audioCtx.state);
-    console.log('🔊 AudioContext currentTime:', audioCtx.currentTime);
-    console.log('🔊 AudioContext sampleRate:', audioCtx.sampleRate);
-    console.log('🔊 AudioContext destination maxChannelCount:', audioCtx.destination.maxChannelCount);
+    console.log('📊 AudioContext state after init:', audioCtx.state);
+    console.log('📊 AudioContext currentTime:', audioCtx.currentTime);
+    console.log('📊 AudioContext sampleRate:', audioCtx.sampleRate);
+    console.log('📊 AudioContext destination maxChannelCount:', audioCtx.destination.maxChannelCount);
 
     // Additional state check
     if (audioCtx.state !== 'running') {
@@ -126,55 +126,55 @@ async function playChord(notes: string[]) {
 
     // Calculate per-note volume to prevent clipping
     const noteVolume = Math.min(0.15, 0.5 / notes.length);
-    console.log('🔊 VOLUME PER NOTE:', noteVolume);
-    console.log('🔊 TOTAL EXPECTED VOLUME:', noteVolume * notes.length);
+    console.log('📊 VOLUME PER NOTE:', noteVolume);
+    console.log('📊 TOTAL EXPECTED VOLUME:', noteVolume * notes.length);
 
-  // Create a master gain node to control overall volume
-  const masterGain = audioCtx.createGain();
-  masterGain.gain.setValueAtTime(0.6, now); // Overall volume control
-  masterGain.connect(audioCtx.destination);
+    // Create a master gain node to control overall volume
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0.6, now); // Overall volume control
+    masterGain.connect(audioCtx.destination);
 
-  notes.forEach((note, index) => {
-    const freq = noteFrequencies[note];
-    console.log(`🎼 Note ${index + 1}: ${note} = ${freq}Hz`);
+    notes.forEach((note, index) => {
+      const freq = noteFrequencies[note];
+      console.log(`🎼 Note ${index + 1}: ${note} = ${freq}Hz`);
 
-    if (!freq) {
-      console.warn(`⚠️ No frequency found for note: ${note}`);
-      return;
-    }
+      if (!freq) {
+        console.warn(`⚠️ No frequency found for note: ${note}`);
+        return;
+      }
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
 
-    // Use triangle wave for softer, less harsh sound
-    osc.type = "triangle";
+      // Use triangle wave for softer, less harsh sound
+      osc.type = "triangle";
 
-    // Add slight detuning to reduce phase interference
-    const detuning = (index - notes.length / 2) * 2; // Spread notes slightly
-    osc.frequency.setValueAtTime(freq, now);
-    osc.detune.setValueAtTime(detuning, now);
+      // Add slight detuning to reduce phase interference
+      const detuning = (index - notes.length / 2) * 2; // Spread notes slightly
+      osc.frequency.setValueAtTime(freq, now);
+      osc.detune.setValueAtTime(detuning, now);
 
-    // Low-pass filter to reduce harsh overtones
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(1000, now);
-    filter.Q.setValueAtTime(0.5, now);
+      // Low-pass filter to reduce harsh overtones
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(1000, now);
+      filter.Q.setValueAtTime(0.5, now);
 
-    // Softer envelope with slower attack/release
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(noteVolume, now + 0.1); // Slower attack
-    gain.gain.setValueAtTime(noteVolume, now + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5); // Longer release
+      // Softer envelope with slower attack/release
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(noteVolume, now + 0.1); // Slower attack
+      gain.gain.setValueAtTime(noteVolume, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 2.5); // Longer release
 
-    // Connect: oscillator -> filter -> gain -> master gain -> destination
-    osc.connect(filter).connect(gain).connect(masterGain);
+      // Connect: oscillator -> filter -> gain -> master gain -> destination
+      osc.connect(filter).connect(gain).connect(masterGain);
 
-    console.log(`🎶 Starting oscillator for ${note} at ${freq}Hz with volume ${noteVolume}, detune ${detuning}`);
-    osc.start(now);
-    osc.stop(now + 2.5);
-  });
+      console.log(`🎶 Starting oscillator for ${note} at ${freq}Hz with volume ${noteVolume}, detune ${detuning}`);
+      osc.start(now);
+      osc.stop(now + 2.5);
+    });
 
-  console.log('✅ All oscillators created and started!');
+    console.log('✅ All oscillators created and started!');
 
   } catch (error) {
     console.error('❌ Audio error:', error);
@@ -191,14 +191,31 @@ async function playChord(notes: string[]) {
   }
 }
 
+interface ChordHistoryEntry {
+  chord: string;
+  timestamp: number;
+  id: string;
+}
+
 export default function App() {
   const [activeChord, setActiveChord] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string>("C");
   const [mode, setMode] = useState<"major" | "minor">("major");
   const [audioReady, setAudioReady] = useState<boolean>(false);
+  const [chordHistory, setChordHistory] = useState<ChordHistoryEntry[]>([]);
 
   const handlePlay = async (chord: string) => {
     setActiveChord(chord);
+    
+    // Add to history
+    const newEntry: ChordHistoryEntry = {
+      chord,
+      timestamp: Date.now(),
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    
+    setChordHistory(prev => [...prev, newEntry].slice(-10)); // Keep only 10 items max, newest at end
+    
     await playChord(chordVoicings[chord]);
     setTimeout(() => setActiveChord(null), 250);
   };
@@ -222,75 +239,114 @@ export default function App() {
   const degreeRoots = scale.map((offset) => semitones[(keyIndex + offset) % 12]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      <h1 className="text-3xl font-bold mb-6">Panochord</h1>
+    <div className="flex min-h-screen bg-gray-900 text-white">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <h1 className="text-3xl font-bold mb-6">Panochord</h1>
 
-      {/* Audio initialization prompt */}
-      {!audioReady && (
-        <div className="mb-6 p-4 bg-blue-800 rounded-lg text-center">
-          <p className="mb-3">Click to enable audio:</p>
-          <button
-            onClick={initializeAudioSystem}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition"
+        {/* Audio initialization prompt */}
+        {!audioReady && (
+          <div className="mb-6 p-4 bg-blue-800 rounded-lg text-center">
+            <p className="mb-3">Click to enable audio:</p>
+            <button
+              onClick={initializeAudioSystem}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition"
+            >
+              🎵 Enable Audio
+            </button>
+          </div>
+        )}
+
+        {/* Key and mode selectors */}
+        <div className="flex space-x-4 mb-6">
+          <select
+            value={selectedKey}
+            onChange={(e) => setSelectedKey(e.target.value)}
+            className="px-3 py-2 rounded bg-gray-800 border border-gray-600"
           >
-            🎵 Enable Audio
-          </button>
+            {roots.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as "major" | "minor")}
+            className="px-3 py-2 rounded bg-gray-800 border border-gray-600"
+          >
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+          </select>
         </div>
-      )}
 
-      {/* Key and mode selectors */}
-      <div className="flex space-x-4 mb-6">
-        <select
-          value={selectedKey}
-          onChange={(e) => setSelectedKey(e.target.value)}
-          className="px-3 py-2 rounded bg-gray-800 border border-gray-600"
-        >
-          {roots.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
+        {/* Chords grouped by roman numerals */}
+        <div className="space-y-6 max-w-3xl flex flex-col items-center">
+          {degreeRoots.map((root, i) => (
+            <div key={i} className="text-center">
+              <h2 className="text-lg font-semibold mb-4 text-gray-300">
+                {romanNumerals[i]}
+              </h2>
+              <div className="flex flex-wrap gap-2 justify-center items-center">
+                {chordTypes.map((suffix) => {
+                  const chordName = root + (suffix === "" ? "" : suffix);
+                  if (!chordVoicings[chordName]) return null;
+                  return (
+                    <button
+                      key={chordName}
+                      onClick={() => handlePlay(chordName)}
+                      onTouchStart={() => handlePlay(chordName)}
+                      className={`px-3 py-2 rounded-lg text-base font-semibold transition ${
+                        activeChord === chordName
+                          ? "bg-blue-500 scale-95"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      }`}
+                    >
+                      {chordName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
-        </select>
-
-        <select
-          value={mode}
-          onChange={(e) => setMode(e.target.value as "major" | "minor")}
-          className="px-3 py-2 rounded bg-gray-800 border border-gray-600"
-        >
-          <option value="major">Major</option>
-          <option value="minor">Minor</option>
-        </select>
+        </div>
       </div>
 
-      {/* Chords grouped by roman numerals */}
-      <div className="space-y-6 max-w-3xl flex flex-col items-center">
-        {degreeRoots.map((root, i) => (
-          <div key={i} className="flex flex-col items-center">
-            <h2 className="text-lg font-semibold mb-4 text-gray-300">
-              {romanNumerals[i]}
-            </h2>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {chordTypes.map((suffix) => {
-                const chordName = root + (suffix === "" ? "" : suffix);
-                if (!chordVoicings[chordName]) return null;
+      {/* Chord History Sidebar */}
+      <div className="w-48 bg-gray-800 border-l border-gray-700 p-4 overflow-hidden">
+        <h3 className="text-lg font-semibold mb-4 text-gray-300">History</h3>
+        <div className="relative h-full">
+          {chordHistory.length === 0 ? (
+            <p className="text-gray-500 text-sm">No chords played yet</p>
+          ) : (
+            <div className="space-y-2">
+              {chordHistory.map((entry, index) => {
+                // Calculate opacity based on position from end (newest = 1, oldest = 0.1)
+                const reverseIndex = chordHistory.length - 1 - index;
+                const opacity = Math.max(0.1, 1 - (reverseIndex * 0.12));
+                const isNewest = index === chordHistory.length - 1;
+                
                 return (
-                  <button
-                    key={chordName}
-                    onClick={() => handlePlay(chordName)}
-                    onTouchStart={() => handlePlay(chordName)}
-                    className={`px-3 py-2 rounded-lg text-base font-semibold transition ${
-                      activeChord === chordName
-                        ? "bg-blue-500 scale-95"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
+                  <div
+                    key={entry.id}
+                    className={`
+                      p-2 rounded bg-gray-700 text-center text-sm font-medium
+                      transform transition-all duration-300 ease-out
+                      ${isNewest ? 'animate-[slideUp_0.3s_ease-out]' : ''}
+                    `}
+                    style={{ 
+                      opacity,
+                      transform: `translateY(${reverseIndex * 2}px)` // Slight stagger effect
+                    }}
                   >
-                    {chordName}
-                  </button>
+                    {entry.chord}
+                  </div>
                 );
               })}
             </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
     </div>
   );
